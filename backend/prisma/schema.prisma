@@ -1,0 +1,194 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  fullName  String
+  email     String   @unique
+  phone     String?
+  password  String
+  role      UserRole @default(CLIENT)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lawyer       Lawyer?
+  appointments Appointment[]
+  reviews      Review[]
+  documents    Document[]
+}
+
+enum UserRole {
+  CLIENT
+  LAWYER
+  ADMIN
+}
+
+model Lawyer {
+  id                    String   @id @default(uuid())
+  userId                String   @unique
+  barRegistrationNumber String   @unique
+  barCouncil            String
+  yearsOfExperience     Int
+  location              String
+  consultationFee       Decimal  @db.Decimal(10, 2)
+  bio                   String?
+  verificationStatus    VerificationStatus @default(PENDING)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  user         User                @relation(fields: [userId], references: [id])
+  legalDomains LawyerLegalDomain[] @relation("LawyerToLegalDomain")
+  appointments Appointment[]
+  reviews      Review[]
+  availability LawyerAvailability[]
+}
+
+enum VerificationStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+model LegalDomain {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  lawyers LawyerLegalDomain[]
+}
+
+model LawyerLegalDomain {
+  lawyerId      String
+  legalDomainId String
+
+  lawyer      Lawyer      @relation("LawyerToLegalDomain", fields: [lawyerId], references: [id], onDelete: Cascade)
+  legalDomain LegalDomain @relation(fields: [legalDomainId], references: [id], onDelete: Cascade)
+
+  @@id([lawyerId, legalDomainId])
+}
+
+model Appointment {
+  id          String            @id @default(uuid())
+  clientId    String
+  lawyerId    String
+  scheduledAt DateTime
+  duration    Int               @default(30)
+  status      AppointmentStatus @default(PENDING)
+  mode        ConsultationMode  @default(VIDEO)
+  notes       String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  client       User          @relation(fields: [clientId], references: [id])
+  lawyer       Lawyer        @relation(fields: [lawyerId], references: [id])
+  consultation Consultation?
+  review       Review?
+  documents    Document[]
+
+  @@index([clientId])
+  @@index([lawyerId])
+  @@index([scheduledAt])
+}
+
+enum AppointmentStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+enum ConsultationMode {
+  AUDIO
+  VIDEO
+  CHAT
+}
+
+model Consultation {
+  id            String             @id @default(uuid())
+  appointmentId String             @unique
+  startedAt     DateTime?
+  endedAt       DateTime?
+  duration      Int?
+  summary       String?
+  status        ConsultationStatus @default(SCHEDULED)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id])
+}
+
+enum ConsultationStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model Review {
+  id            String   @id @default(uuid())
+  clientId      String
+  lawyerId      String
+  appointmentId String   @unique
+  rating        Int
+  comment      String?
+  isPublished   Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  client      User        @relation(fields: [clientId], references: [id])
+  lawyer      Lawyer      @relation(fields: [lawyerId], references: [id])
+  appointment Appointment @relation(fields: [appointmentId], references: [id])
+}
+
+model Document {
+  id            String       @id @default(uuid())
+  uploadedById  String
+  appointmentId String?
+  fileName      String
+  storageKey    String       @unique
+  mimeType      String
+  fileSize      Int
+  type          DocumentType @default(CONSULTATION)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  uploadedBy  User         @relation(fields: [uploadedById], references: [id])
+  appointment Appointment? @relation(fields: [appointmentId], references: [id])
+
+  @@index([uploadedById])
+  @@index([appointmentId])
+}
+
+enum DocumentType {
+  CONSULTATION
+  LAWYER_VERIFICATION
+}
+
+model LawyerAvailability {
+  id        String   @id @default(uuid())
+  lawyerId  String
+  dayOfWeek Int
+  startTime String
+  endTime   String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lawyer Lawyer @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+
+  @@index([lawyerId])
+  @@index([dayOfWeek])
+}

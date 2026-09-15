@@ -78,6 +78,7 @@ export const register = async (req: Request, res: Response) => {
     });
   }
 };
+
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
@@ -107,12 +108,12 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
-    const isPasswordValid = await bcrypt.compare(
+    const passwordMatches = await bcrypt.compare(
       password,
       user.password
     );
 
-    if (!isPasswordValid) {
+    if (!passwordMatches) {
       return res.status(401).json({
         success: false,
         message: "Invalid email or password",
@@ -134,21 +135,19 @@ export const login = async (req: Request, res: Response) => {
       { expiresIn: "7d" }
     );
 
-    const safeUser = {
-      id: user.id,
-      fullName: user.fullName,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
-      isActive: user.isActive,
-      createdAt: user.createdAt,
-    };
-
     return res.status(200).json({
       success: true,
       message: "Login successful",
       data: {
-        user: safeUser,
+        user: {
+          id: user.id,
+          fullName: user.fullName,
+          email: user.email,
+          phone: user.phone,
+          role: user.role,
+          isActive: user.isActive,
+          createdAt: user.createdAt,
+        },
         token,
       },
     });

@@ -5,7 +5,7 @@ import prisma from "../utils/prisma.js";
 
 export const register = async (req: Request, res: Response) => {
   try {
-    const { fullName, email, phone, password } = req.body;
+    const { fullName, email, phone, password, role } = req.body;
 
     if (!fullName || !email || !password) {
       return res.status(400).json({
@@ -13,6 +13,8 @@ export const register = async (req: Request, res: Response) => {
         message: "Full name, email and password are required",
       });
     }
+
+    const assignedRole = role === "LAWYER" ? "LAWYER" : "CLIENT";
 
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -31,9 +33,9 @@ export const register = async (req: Request, res: Response) => {
       data: {
         fullName,
         email,
-        phone,
+        phone: phone || null,
         password: hashedPassword,
-        role: "CLIENT",
+        role: assignedRole,
       },
       select: {
         id: true,
@@ -46,11 +48,7 @@ export const register = async (req: Request, res: Response) => {
       },
     });
 
-    const jwtSecret = process.env.JWT_SECRET;
-
-    if (!jwtSecret) {
-      throw new Error("JWT_SECRET is not configured");
-    }
+    const jwtSecret = process.env.JWT_SECRET || "legal_consultation_dev_secret_2026";
 
     const token = jwt.sign(
       {
@@ -71,7 +69,6 @@ export const register = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Registration error:", error);
-
     return res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -92,6 +89,15 @@ export const login = async (req: Request, res: Response) => {
 
     const user = await prisma.user.findUnique({
       where: { email },
+      include: {
+        lawyer: {
+          select: {
+            id: true,
+            verificationStatus: true,
+            barRegistrationNumber: true,
+          },
+        },
+      },
     });
 
     if (!user) {
@@ -104,14 +110,11 @@ export const login = async (req: Request, res: Response) => {
     if (!user.isActive) {
       return res.status(403).json({
         success: false,
-        message: "Your account is inactive",
+        message: "Your account has been deactivated. Please contact support.",
       });
     }
 
-    const passwordMatches = await bcrypt.compare(
-      password,
-      user.password
-    );
+    const passwordMatches = await bcrypt.compare(password, user.password);
 
     if (!passwordMatches) {
       return res.status(401).json({
@@ -120,11 +123,7 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
-    const jwtSecret = process.env.JWT_SECRET;
-
-    if (!jwtSecret) {
-      throw new Error("JWT_SECRET is not configured");
-    }
+    const jwtSecret = process.env.JWT_SECRET || "legal_consultation_dev_secret_2026";
 
     const token = jwt.sign(
       {
@@ -147,13 +146,13 @@ export const login = async (req: Request, res: Response) => {
           role: user.role,
           isActive: user.isActive,
           createdAt: user.createdAt,
+          lawyer: user.lawyer,
         },
         token,
       },
     });
   } catch (error) {
     console.error("Login error:", error);
-
     return res.status(500).json({
       success: false,
       message: "Internal server error",

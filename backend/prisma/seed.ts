@@ -264,6 +264,9 @@ async function main() {
 
     // Set availability slots for approved lawyers (Monday to Saturday: 10:00-13:00 and 14:00-18:00)
     if (lawyerItem.verificationStatus === "APPROVED") {
+      await prisma.lawyerAvailability.deleteMany({
+        where: { lawyerId: lawyer.id },
+      });
       for (let day = 1; day <= 6; day++) {
         // Morning slot
         await prisma.lawyerAvailability.create({
@@ -288,9 +291,11 @@ async function main() {
       }
     }
 
-    // Create a mock verification document for each lawyer
-    await prisma.document.create({
-      data: {
+    // Create a mock verification document for each lawyer (idempotent upsert)
+    await prisma.document.upsert({
+      where: { storageKey: `sample-cert-${user.id}.pdf` },
+      update: {},
+      create: {
         uploadedById: user.id,
         fileName: `${lawyerItem.barRegistrationNumber.replace(/\//g, "-")}_BarCertificate.pdf`,
         storageKey: `sample-cert-${user.id}.pdf`,
@@ -304,129 +309,135 @@ async function main() {
   }
   console.log(`✓ Seeded ${lawyersSeedData.length} lawyers with availability & certificates`);
 
-  // 5. Seed Appointments & Consultations
+  // 5. Seed Appointments & Consultations (only if not already created)
   const lawyerRajesh = seededLawyers[0].lawyer;
   const lawyerPriya = seededLawyers[1].lawyer;
   const lawyerAmitav = seededLawyers[2].lawyer;
 
-  // Appointment 1: Completed consultation with Adv. Rajesh Sharma + 5-star review
-  const pastDate1 = new Date();
-  pastDate1.setDate(pastDate1.getDate() - 3);
-  pastDate1.setHours(11, 0, 0, 0);
-
-  const appt1 = await prisma.appointment.create({
-    data: {
-      clientId: client1.id,
-      lawyerId: lawyerRajesh.id,
-      scheduledAt: pastDate1,
-      duration: 30,
-      mode: "VIDEO",
-      notes: "Need consultation on a high-stakes commercial breach of contract and criminal defamation threat.",
-      status: "COMPLETED",
-    },
+  const existingAppt = await prisma.appointment.findFirst({
+    where: { clientId: client1.id, lawyerId: lawyerRajesh.id },
   });
 
-  await prisma.consultation.create({
-    data: {
-      appointmentId: appt1.id,
-      startedAt: pastDate1,
-      endedAt: new Date(pastDate1.getTime() + 32 * 60 * 1000),
-      duration: 32,
-      summary: "Reviewed notice received by client. Advised to issue formal legal rebuttal within 14 days and file anticipatory bail petition if FIR is registered.",
-      status: "COMPLETED",
-    },
-  });
+  if (!existingAppt) {
+    // Appointment 1: Completed consultation with Adv. Rajesh Sharma + 5-star review
+    const pastDate1 = new Date();
+    pastDate1.setDate(pastDate1.getDate() - 3);
+    pastDate1.setHours(11, 0, 0, 0);
 
-  await prisma.review.create({
-    data: {
-      clientId: client1.id,
-      lawyerId: lawyerRajesh.id,
-      appointmentId: appt1.id,
-      rating: 5,
-      comment: "Advocate Rajesh provided crystal clear clarity on legal risk and framed a sharp defense strategy. Very reassuring experience!",
-      isPublished: true,
-    },
-  });
+    const appt1 = await prisma.appointment.create({
+      data: {
+        clientId: client1.id,
+        lawyerId: lawyerRajesh.id,
+        scheduledAt: pastDate1,
+        duration: 30,
+        mode: "VIDEO",
+        notes: "Need consultation on a high-stakes commercial breach of contract and criminal defamation threat.",
+        status: "COMPLETED",
+      },
+    });
 
-  // Appointment 2: Completed consultation with Adv. Priya Nair + 5-star review
-  const pastDate2 = new Date();
-  pastDate2.setDate(pastDate2.getDate() - 5);
-  pastDate2.setHours(15, 0, 0, 0);
+    await prisma.consultation.create({
+      data: {
+        appointmentId: appt1.id,
+        startedAt: pastDate1,
+        endedAt: new Date(pastDate1.getTime() + 32 * 60 * 1000),
+        duration: 32,
+        summary: "Reviewed notice received by client. Advised to issue formal legal rebuttal within 14 days and file anticipatory bail petition if FIR is registered.",
+        status: "COMPLETED",
+      },
+    });
 
-  const appt2 = await prisma.appointment.create({
-    data: {
-      clientId: client2.id,
-      lawyerId: lawyerPriya.id,
-      scheduledAt: pastDate2,
-      duration: 45,
-      mode: "VIDEO",
-      notes: "Seeking advice regarding child custody agreement during mutual consent separation.",
-      status: "COMPLETED",
-    },
-  });
+    await prisma.review.create({
+      data: {
+        clientId: client1.id,
+        lawyerId: lawyerRajesh.id,
+        appointmentId: appt1.id,
+        rating: 5,
+        comment: "Advocate Rajesh provided crystal clear clarity on legal risk and framed a sharp defense strategy. Very reassuring experience!",
+        isPublished: true,
+      },
+    });
 
-  await prisma.consultation.create({
-    data: {
-      appointmentId: appt2.id,
-      startedAt: pastDate2,
-      endedAt: new Date(pastDate2.getTime() + 45 * 60 * 1000),
-      duration: 45,
-      summary: "Detailed discussion on visitation schedule, joint custody terms, and child maintenance escrow account structuring.",
-      status: "COMPLETED",
-    },
-  });
+    // Appointment 2: Completed consultation with Adv. Priya Nair + 5-star review
+    const pastDate2 = new Date();
+    pastDate2.setDate(pastDate2.getDate() - 5);
+    pastDate2.setHours(15, 0, 0, 0);
 
-  await prisma.review.create({
-    data: {
-      clientId: client2.id,
-      lawyerId: lawyerPriya.id,
-      appointmentId: appt2.id,
-      rating: 5,
-      comment: "Advocate Priya is exceptionally empathetic and knowledgeable. She made a difficult conversation smooth and constructive.",
-      isPublished: true,
-    },
-  });
+    const appt2 = await prisma.appointment.create({
+      data: {
+        clientId: client2.id,
+        lawyerId: lawyerPriya.id,
+        scheduledAt: pastDate2,
+        duration: 45,
+        mode: "VIDEO",
+        notes: "Seeking advice regarding child custody agreement during mutual consent separation.",
+        status: "COMPLETED",
+      },
+    });
 
-  // Appointment 3: Upcoming Accepted consultation with Adv. Amitav Sengupta
-  const futureDate1 = new Date();
-  futureDate1.setDate(futureDate1.getDate() + 2);
-  futureDate1.setHours(11, 0, 0, 0);
+    await prisma.consultation.create({
+      data: {
+        appointmentId: appt2.id,
+        startedAt: pastDate2,
+        endedAt: new Date(pastDate2.getTime() + 45 * 60 * 1000),
+        duration: 45,
+        summary: "Detailed discussion on visitation schedule, joint custody terms, and child maintenance escrow account structuring.",
+        status: "COMPLETED",
+      },
+    });
 
-  const appt3 = await prisma.appointment.create({
-    data: {
-      clientId: client1.id,
-      lawyerId: lawyerAmitav.id,
-      scheduledAt: futureDate1,
-      duration: 30,
-      mode: "AUDIO",
-      notes: "Startup founder agreement review and trademark registration strategy for SaaS platform.",
-      status: "ACCEPTED",
-    },
-  });
+    await prisma.review.create({
+      data: {
+        clientId: client2.id,
+        lawyerId: lawyerPriya.id,
+        appointmentId: appt2.id,
+        rating: 5,
+        comment: "Advocate Priya is exceptionally empathetic and knowledgeable. She made a difficult conversation smooth and constructive.",
+        isPublished: true,
+      },
+    });
 
-  await prisma.consultation.create({
-    data: {
-      appointmentId: appt3.id,
-      status: "SCHEDULED",
-    },
-  });
+    // Appointment 3: Upcoming Accepted consultation with Adv. Amitav Sengupta
+    const futureDate1 = new Date();
+    futureDate1.setDate(futureDate1.getDate() + 2);
+    futureDate1.setHours(11, 0, 0, 0);
 
-  // Appointment 4: Pending consultation request for Adv. Rajesh Sharma
-  const futureDate2 = new Date();
-  futureDate2.setDate(futureDate2.getDate() + 4);
-  futureDate2.setHours(14, 30, 0, 0);
+    const appt3 = await prisma.appointment.create({
+      data: {
+        clientId: client1.id,
+        lawyerId: lawyerAmitav.id,
+        scheduledAt: futureDate1,
+        duration: 30,
+        mode: "AUDIO",
+        notes: "Startup founder agreement review and trademark registration strategy for SaaS platform.",
+        status: "ACCEPTED",
+      },
+    });
 
-  await prisma.appointment.create({
-    data: {
-      clientId: client2.id,
-      lawyerId: lawyerRajesh.id,
-      scheduledAt: futureDate2,
-      duration: 30,
-      mode: "CHAT",
-      notes: "Inquiry regarding cyber impersonation and FIR filing under Section 66D IT Act.",
-      status: "PENDING",
-    },
-  });
+    await prisma.consultation.create({
+      data: {
+        appointmentId: appt3.id,
+        status: "SCHEDULED",
+      },
+    });
+
+    // Appointment 4: Pending consultation request for Adv. Rajesh Sharma
+    const futureDate2 = new Date();
+    futureDate2.setDate(futureDate2.getDate() + 4);
+    futureDate2.setHours(14, 30, 0, 0);
+
+    await prisma.appointment.create({
+      data: {
+        clientId: client2.id,
+        lawyerId: lawyerRajesh.id,
+        scheduledAt: futureDate2,
+        duration: 30,
+        mode: "CHAT",
+        notes: "Inquiry regarding cyber impersonation and FIR filing under Section 66D IT Act.",
+        status: "PENDING",
+      },
+    });
+  }
 
   console.log("✓ Seeded sample appointments, consultations, and reviews");
   console.log("\n=======================================================");

@@ -1,5 +1,9 @@
 const getApiBase = () => {
-  const url = import.meta.env.VITE_API_URL;
+  const url =
+    import.meta.env.VITE_API_URL ||
+    (typeof window !== "undefined" && window.location.hostname !== "localhost"
+      ? "https://legal-consultation-api.onrender.com"
+      : "");
   if (!url) return "/api/v1";
   if (url.startsWith("http://") || url.startsWith("https://")) {
     return `${url.replace(/\/+$/, "")}/api/v1`;

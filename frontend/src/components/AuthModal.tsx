@@ -18,12 +18,14 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialMode?: "login" | "register";
+  onSuccess?: (role: string) => void;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   onClose,
   initialMode = "login",
+  onSuccess,
 }) => {
   const { login, register, loginAsDemo } = useAuth();
   const [mode, setMode] = useState<"login" | "register">(initialMode);
@@ -51,6 +53,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         await register({ fullName, email, phone: phone || undefined, password, role });
       }
       onClose();
+      onSuccess?.(role);
     } catch (err: any) {
       setError(err.message || "Authentication failed. Please verify credentials.");
     } finally {
@@ -64,6 +67,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     try {
       await loginAsDemo(demoRole);
       onClose();
+      onSuccess?.(demoRole);
     } catch (err: any) {
       setError(err.message || "Failed to sign in with demo user.");
     } finally {

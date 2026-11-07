@@ -64,17 +64,30 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
 
             {isAuthenticated && user?.role === "CLIENT" && (
-              <button
-                onClick={() => setCurrentTab("my-appointments")}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                  currentTab === "my-appointments"
-                    ? "bg-navy-50 text-navy-900 font-semibold"
-                    : "text-slate-600 hover:text-navy-900 hover:bg-slate-100"
-                }`}
-              >
-                <Calendar className="w-4 h-4 text-navy-800" />
-                My Consultations
-              </button>
+              <>
+                <button
+                  onClick={() => setCurrentTab("client-dashboard")}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                    currentTab === "client-dashboard"
+                      ? "bg-navy-50 text-navy-900 font-semibold"
+                      : "text-slate-600 hover:text-navy-900 hover:bg-slate-100"
+                  }`}
+                >
+                  <UserIcon className="w-4 h-4 text-navy-800" />
+                  Client Dashboard
+                </button>
+                <button
+                  onClick={() => setCurrentTab("my-appointments")}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                    currentTab === "my-appointments"
+                      ? "bg-navy-50 text-navy-900 font-semibold"
+                      : "text-slate-600 hover:text-navy-900 hover:bg-slate-100"
+                  }`}
+                >
+                  <Calendar className="w-4 h-4 text-navy-800" />
+                  My Consultations
+                </button>
+              </>
             )}
 
             {isAuthenticated && user?.role === "LAWYER" && (
@@ -132,7 +145,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <button
                     onClick={() => {
                       loginAsDemo("CLIENT");
-                      setCurrentTab("my-appointments");
+                      setCurrentTab("client-dashboard");
                     }}
                     className="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center justify-between"
                   >
@@ -221,13 +234,22 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                     <div className="py-1">
                       {user?.role === "CLIENT" && (
-                        <button
-                          onClick={() => setCurrentTab("my-appointments")}
-                          className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                        >
-                          <Calendar className="w-4 h-4 text-navy-800" />
-                          My Consultations
-                        </button>
+                        <>
+                          <button
+                            onClick={() => setCurrentTab("client-dashboard")}
+                            className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                          >
+                            <UserIcon className="w-4 h-4 text-navy-800" />
+                            Client Dashboard
+                          </button>
+                          <button
+                            onClick={() => setCurrentTab("my-appointments")}
+                            className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                          >
+                            <Calendar className="w-4 h-4 text-navy-800" />
+                            My Consultations
+                          </button>
+                        </>
                       )}
 
                       {user?.role === "LAWYER" && (

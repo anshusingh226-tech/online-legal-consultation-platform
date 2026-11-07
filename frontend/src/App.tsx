@@ -4,6 +4,7 @@ import { Navbar } from "./components/Navbar";
 import { Footer } from "./components/Footer";
 import { HomePage } from "./pages/HomePage";
 import { MyAppointmentsPage } from "./pages/MyAppointmentsPage";
+import { ClientDashboardPage } from "./pages/ClientDashboardPage";
 import { LawyerDashboardPage } from "./pages/LawyerDashboardPage";
 import { AdminDashboardPage } from "./pages/AdminDashboardPage";
 import { LawyerProfileModal } from "./components/LawyerProfileModal";
@@ -71,6 +72,15 @@ const MainApp: React.FC = () => {
           />
         )}
 
+        {currentTab === "client-dashboard" && (
+          <ClientDashboardPage
+            onJoinRoom={handleJoinConsultationRoom}
+            onOpenReview={handleOpenReview}
+            onOpenBookLawyer={() => setCurrentTab("home")}
+            onSelectLawyer={handleOpenLawyerProfile}
+          />
+        )}
+
         {currentTab === "my-appointments" && (
           <MyAppointmentsPage
             onJoinRoom={handleJoinConsultationRoom}
@@ -127,6 +137,11 @@ const MainApp: React.FC = () => {
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
+        onSuccess={(loggedRole) => {
+          if (loggedRole === "LAWYER") setCurrentTab("lawyer-dashboard");
+          else if (loggedRole === "ADMIN") setCurrentTab("admin-dashboard");
+          else setCurrentTab("client-dashboard");
+        }}
       />
 
       <LawyerApplyModal

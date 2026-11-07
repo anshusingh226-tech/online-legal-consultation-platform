@@ -1,4 +1,13 @@
-const API_BASE = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api/v1` : "/api/v1";
+const getApiBase = () => {
+  const url = import.meta.env.VITE_API_URL;
+  if (!url) return "/api/v1";
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    return `${url.replace(/\/+$/, "")}/api/v1`;
+  }
+  return `https://${url.replace(/\/+$/, "")}/api/v1`;
+};
+
+const API_BASE = getApiBase();
 
 const getHeaders = (isMultipart = false) => {
   const token = localStorage.getItem("token");

@@ -9,7 +9,7 @@ services:
     name: legal-consultation-api
     runtime: node
     plan: free
-    buildCommand: cd backend && npm install && npx prisma generate && npm run build && npx prisma migrate deploy && npx tsx prisma/seed.ts
+    buildCommand: cd backend && npm install --include=dev && npx prisma generate && npm run build && npx prisma migrate deploy && npx tsx prisma/seed.ts
     startCommand: cd backend && npm run start
     envVars:
       - key: DATABASE_URL

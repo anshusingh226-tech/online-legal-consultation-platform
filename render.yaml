@@ -36,10 +36,7 @@ services:
     staticPublishPath: frontend/dist
     envVars:
       - key: VITE_API_URL
-        fromService:
-          type: web
-          name: legal-consultation-api
-          property: host
+        value: https://legal-consultation-api.onrender.com
     routes:
       - type: rewrite
         source: /*

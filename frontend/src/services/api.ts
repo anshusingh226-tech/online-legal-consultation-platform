@@ -1,10 +1,13 @@
 const getApiBase = () => {
-  const url =
-    import.meta.env.VITE_API_URL ||
-    (typeof window !== "undefined" && window.location.hostname !== "localhost"
-      ? "https://legal-consultation-api.onrender.com"
-      : "");
-  if (!url) return "/api/v1";
+  let url = import.meta.env.VITE_API_URL;
+  // If url is missing or just the internal service name without a dot/TLD
+  if (!url || !url.includes(".")) {
+    if (typeof window !== "undefined" && window.location.hostname !== "localhost") {
+      url = "https://legal-consultation-api.onrender.com";
+    } else {
+      return "/api/v1";
+    }
+  }
   if (url.startsWith("http://") || url.startsWith("https://")) {
     return `${url.replace(/\/+$/, "")}/api/v1`;
   }

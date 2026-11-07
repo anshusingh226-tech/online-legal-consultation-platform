@@ -28,7 +28,7 @@ interface LawyerDashboardPageProps {
 const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 export const LawyerDashboardPage: React.FC<LawyerDashboardPageProps> = ({ onJoinRoom }) => {
-  const { user } = useAuth();
+  const { user, token, loginAsDemo } = useAuth();
 
   const [activeTab, setActiveTab] = useState<"requests" | "availability" | "earnings" | "profile">("requests");
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -53,26 +53,26 @@ export const LawyerDashboardPage: React.FC<LawyerDashboardPageProps> = ({ onJoin
 
   useEffect(() => {
     loadAllData();
-  }, []);
+  }, [user?.role, token]);
 
   const loadAllData = async () => {
     setLoading(true);
     try {
-      const [apptRes, profileRes, availRes, earningsRes] = await Promise.all([
+      const [apptRes, profileRes, availRes, earningsRes] = await Promise.allSettled([
         api.getMyAppointments(),
         api.getMyLawyerProfile(),
         api.getMyAvailability(),
         api.getLawyerEarnings(),
       ]);
 
-      if (apptRes.data) setAppointments(apptRes.data);
-      if (profileRes.data) {
-        setLawyerProfile(profileRes.data);
-        setEditFee(profileRes.data.consultationFee);
-        setEditBio(profileRes.data.bio || "");
+      if (apptRes.status === "fulfilled" && apptRes.value?.data) setAppointments(apptRes.value.data);
+      if (profileRes.status === "fulfilled" && profileRes.value?.data) {
+        setLawyerProfile(profileRes.value.data);
+        setEditFee(profileRes.value.data.consultationFee);
+        setEditBio(profileRes.value.data.bio || "");
       }
-      if (availRes.data) setAvailability(availRes.data);
-      if (earningsRes.data) setEarningsData(earningsRes.data);
+      if (availRes.status === "fulfilled" && availRes.value?.data) setAvailability(availRes.value.data);
+      if (earningsRes.status === "fulfilled" && earningsRes.value?.data) setEarningsData(earningsRes.value.data);
     } catch (err) {
       console.error("Failed to load lawyer dashboard:", err);
     } finally {

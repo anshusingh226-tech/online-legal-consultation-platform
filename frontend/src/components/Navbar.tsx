@@ -143,8 +143,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                     Instant Role Testing
                   </div>
                   <button
-                    onClick={() => {
-                      loginAsDemo("CLIENT");
+                    onClick={async () => {
+                      await loginAsDemo("CLIENT");
                       setCurrentTab("client-dashboard");
                     }}
                     className="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center justify-between"
@@ -153,8 +153,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">Client</span>
                   </button>
                   <button
-                    onClick={() => {
-                      loginAsDemo("LAWYER");
+                    onClick={async () => {
+                      await loginAsDemo("LAWYER");
                       setCurrentTab("lawyer-dashboard");
                     }}
                     className="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center justify-between"
@@ -163,8 +163,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">Lawyer</span>
                   </button>
                   <button
-                    onClick={() => {
-                      loginAsDemo("ADMIN");
+                    onClick={async () => {
+                      await loginAsDemo("ADMIN");
                       setCurrentTab("admin-dashboard");
                     }}
                     className="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center justify-between"

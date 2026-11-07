@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { AdminAnalytics, Lawyer, User, Appointment, LegalDomain } from "../types";
 import { api } from "../services/api";
+import { useAuth } from "../context/AuthContext";
 import {
   ShieldCheck,
   Users,
@@ -18,9 +19,11 @@ import {
   AlertTriangle,
   UserCheck,
   UserX,
+  Lock,
 } from "lucide-react";
 
 export const AdminDashboardPage: React.FC = () => {
+  const { user, token, loginAsDemo } = useAuth();
   const [activeTab, setActiveTab] = useState<"analytics" | "lawyers" | "users" | "consultations" | "domains">("analytics");
 
   const [analytics, setAnalytics] = useState<AdminAnalytics | null>(null);
@@ -43,12 +46,12 @@ export const AdminDashboardPage: React.FC = () => {
 
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+  }, [user?.role, token]);
 
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const [analyticsRes, lawyersRes, usersRes, consultRes, domainsRes] = await Promise.all([
+      const [analyticsRes, lawyersRes, usersRes, consultRes, domainsRes] = await Promise.allSettled([
         api.getAdminAnalytics(),
         api.getAdminLawyers(),
         api.getAdminUsers(),
@@ -56,11 +59,11 @@ export const AdminDashboardPage: React.FC = () => {
         api.getLegalDomains(true),
       ]);
 
-      if (analyticsRes.data) setAnalytics(analyticsRes.data);
-      if (lawyersRes.data) setLawyers(lawyersRes.data);
-      if (usersRes.data) setUsers(usersRes.data);
-      if (consultRes.data) setConsultations(consultRes.data);
-      if (domainsRes.data) setDomains(domainsRes.data);
+      if (analyticsRes.status === "fulfilled" && analyticsRes.value?.data) setAnalytics(analyticsRes.value.data);
+      if (lawyersRes.status === "fulfilled" && lawyersRes.value?.data) setLawyers(lawyersRes.value.data);
+      if (usersRes.status === "fulfilled" && usersRes.value?.data) setUsers(usersRes.value.data);
+      if (consultRes.status === "fulfilled" && consultRes.value?.data) setConsultations(consultRes.value.data);
+      if (domainsRes.status === "fulfilled" && domainsRes.value?.data) setDomains(domainsRes.value.data);
     } catch (err) {
       console.error("Failed to load admin data:", err);
     } finally {
@@ -139,6 +142,31 @@ export const AdminDashboardPage: React.FC = () => {
     }
     return true;
   });
+
+  if (!token || user?.role !== "ADMIN") {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-20 text-center space-y-6">
+        <div className="w-16 h-16 rounded-3xl bg-indigo-50 text-indigo-700 flex items-center justify-center mx-auto shadow-md">
+          <Lock className="w-8 h-8" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold font-serif text-slate-900">
+            Admin Access Required
+          </h2>
+          <p className="text-sm text-slate-500 max-w-md mx-auto">
+            You must be logged in with Administrator credentials to view platform analytics, lawyer verification queues, and system governance.
+          </p>
+        </div>
+        <button
+          onClick={() => loginAsDemo("ADMIN")}
+          className="px-6 py-3 rounded-2xl bg-navy-900 hover:bg-navy-800 text-white font-bold text-sm shadow-md transition-colors inline-flex items-center gap-2"
+        >
+          <ShieldCheck className="w-4 h-4 text-gold-400" />
+          <span>Sign In as Super Admin</span>
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 animate-in fade-in">
